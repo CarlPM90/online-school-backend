@@ -14,7 +14,7 @@ RUN cp docker/envs/.env.postgres.example /var/www/html/.env \
   && cp docker/conf/caddy/Caddyfile /etc/caddy/Caddyfile \
   && cp docker/conf/php/xxx-devilbox-default-php.ini /usr/local/etc/php/conf.d/xxx-devilbox-default-php.ini \
   && cp docker/conf/php/php-fpm-custom.conf /usr/local/etc/php-fpm.d/php-fpm-custom.conf \
-  && rm /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && pecl uninstall xdebug
+  && (rm /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini || true) && (pecl uninstall xdebug || true)
   
 RUN composer self-update && composer install --no-scripts 
 RUN chown -R devilbox:devilbox /var/www/
