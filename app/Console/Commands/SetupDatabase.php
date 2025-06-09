@@ -38,9 +38,13 @@ class SetupDatabase extends Command
                 return 0;
             }
 
-            // Generate application key
-            $this->info('🔑 Generating application key...');
-            Artisan::call('key:generate', ['--force' => true]);
+            // Skip key generation if key already exists to avoid breaking encrypted data
+            if (!config('app.key')) {
+                $this->info('🔑 Generating application key...');
+                Artisan::call('key:generate', ['--force' => true]);
+            } else {
+                $this->info('🔑 Application key already set, skipping generation');
+            }
 
             // Publish migrations for all packages
             $this->info('📝 Publishing package migrations...');
@@ -150,6 +154,37 @@ class SetupDatabase extends Command
             $this->info('🔐 Setting up Laravel Passport...');
             Artisan::call('passport:keys', ['--force' => true]);
             Artisan::call('passport:client', ['--personal' => true, '--no-interaction' => true]);
+
+            // Fix failed_jobs table and clear encrypted job data
+            $this->info('🔧 Fixing failed_jobs table and clearing problematic jobs...');
+            try {
+                if (!Schema::hasColumn('failed_jobs', 'uuid')) {
+                    DB::statement('ALTER TABLE failed_jobs ADD COLUMN uuid VARCHAR(255) NULL');
+                    $this->info('✅ Added uuid column to failed_jobs table');
+                }
+                
+                // Clear all failed jobs (they may have encryption issues)
+                DB::table('failed_jobs')->delete();
+                $this->info('✅ Cleared failed jobs');
+                
+                // Clear jobs table if it exists (pending jobs with wrong key)
+                if (Schema::hasTable('jobs')) {
+                    DB::table('jobs')->delete();
+                    $this->info('✅ Cleared pending jobs');
+                }
+                
+                // Clear Redis queues to remove encrypted job data
+                try {
+                    $redis = app('redis')->connection();
+                    $redis->flushdb();
+                    $this->info('✅ Cleared Redis queues');
+                } catch (Exception $e) {
+                    $this->warn('Could not clear Redis queues: ' . $e->getMessage());
+                }
+                
+            } catch (Exception $e) {
+                $this->warn('Failed jobs fix failed: ' . $e->getMessage());
+            }
 
             // Create storage link
             $this->info('🔗 Creating storage link...');
