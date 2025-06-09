@@ -24,6 +24,31 @@ Route::get('/email', function () {
     return 'Your email is now verified';
 });
 
+// Health check endpoints for Railway
+Route::get('/health', function () {
+    try {
+        // Test database connection
+        DB::connection()->getPdo();
+        
+        return response()->json([
+            'status' => 'ok',
+            'database' => 'connected',
+            'timestamp' => now()
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'database' => 'disconnected',
+            'error' => $e->getMessage(),
+            'timestamp' => now()
+        ], 503);
+    }
+});
+
+Route::get('/up', function () {
+    return response('OK', 200);
+});
+
 Route::get('/clear-cache', function () {
     Artisan::call('config:clear');
     Artisan::call('route:clear');
