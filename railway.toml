@@ -1,5 +1,6 @@
 [build]
 builder = "DOCKERFILE"
+buildCommand = "./railway-build.sh"
 
 [deploy]
 startCommand = "/usr/bin/supervisord -c /etc/supervisor/supervisord.conf"
