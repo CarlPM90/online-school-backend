@@ -37,3 +37,28 @@ Route::get('/seeds/consultations/{author?}/{user?}', function ($author = null, $
 });
 
 Route::get('events', [EventAPIController::class, 'index']);
+
+// Test routes for frontend
+Route::get('test', function () {
+    return response()->json([
+        'message' => 'API is working!',
+        'timestamp' => now(),
+        'cors' => 'enabled'
+    ]);
+});
+
+Route::get('settings', function () {
+    return response()->json([
+        'app_name' => config('app.name'),
+        'app_url' => config('app.url'),
+        'api_working' => true
+    ]);
+});
+
+Route::get('config', function () {
+    return response()->json([
+        'api_version' => '1.0',
+        'cors_enabled' => true,
+        'status' => 'operational'
+    ]);
+});

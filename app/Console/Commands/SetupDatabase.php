@@ -160,8 +160,12 @@ class SetupDatabase extends Command
             }
 
             // Cache configurations
-            $this->info('⚙️ Caching configurations...');
+            $this->info('⚙️ Clearing and caching configurations...');
+            Artisan::call('config:clear');
+            Artisan::call('route:clear');
+            Artisan::call('view:clear');
             Artisan::call('config:cache');
+            Artisan::call('route:cache');
 
             $this->info('✅ Database setup completed successfully!');
             $this->info('📚 API documentation available at: /api/documentation');
