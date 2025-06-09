@@ -1,0 +1,154 @@
+{
+  "name": "escolalms/api",
+  "description": "Headless LMS",
+  "type": "project",
+  "keywords": [
+    "lms",
+    "learning-management-system",
+    "laravel",
+    "reactjs"
+  ],
+  "homepage": "https://lms.escolasoft.com",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Mateusz Wojczal",
+      "email": "mateusz@wojczal.com"
+    },
+    {
+      "name": "Paweł Chołaj",
+      "email": "pawel.cholaj@escola.pl",
+      "homepage": "https://cholaj.pl"
+    }
+  ],
+  "require": {
+    "php": ">=7.4",
+    "darkaonline/l5-swagger": "8.1.0",
+    "dmore/chrome-mink-driver": "^2.7",
+    "doctrine/dbal": "^2|^3",
+    "escolalms/assign-without-account": "0.1.17",
+    "escolalms/auth": "0.2.35",
+    "escolalms/bookmarks_notes": "0.0.6",
+    "escolalms/cart": "0.4.70",
+    "escolalms/categories": "0.1.40",
+    "escolalms/cmi5": "0.0.8",
+    "escolalms/consultations": "0.2.38",
+    "escolalms/consultation-access": "0.0.12",
+    "escolalms/core": "1.3.13",
+    "escolalms/courses": "0.4.32",
+    "escolalms/course-access": "0.0.10",
+    "escolalms/courses-import-export": "0.1.19",
+    "escolalms/csv-users": "0.1.15",
+    "escolalms/files": "0.1.29",
+    "escolalms/headless-h5p": "0.4.44",
+    "escolalms/images": "0.1.22",
+    "escolalms/invoices": "0.1.4",
+    "escolalms/lrs": "0.0.12",
+    "escolalms/mailerlite": "0.4.2",
+    "escolalms/mattermost": "0.1.5",
+    "escolalms/model-fields": "0.0.20",
+    "escolalms/notifications": "0.3.2",
+    "escolalms/pages": "0.1.11",
+    "escolalms/payments": "0.2.13",
+    "escolalms/pencil-spaces": "0.0.2",
+    "escolalms/permissions": "0.1.10",
+    "escolalms/questionnaire": "0.2.18",
+    "escolalms/reports": "0.1.46",
+    "escolalms/scorm": "0.2.20",
+    "escolalms/settings": "0.2.4",
+    "escolalms/stationary-events": "0.1.11",
+    "escolalms/tags": "0.1.20",
+    "escolalms/tasks": "0.0.14",
+    "escolalms/templates": "0.2.37",
+    "escolalms/templates-email": "0.1.62",
+    "escolalms/templates-pdf": "dev-main",
+    "escolalms/templates-sms": "0.1.2",
+    "escolalms/topic-types": "^0",
+    "escolalms/topic-type-project": "0.0.7",
+    "escolalms/topic-type-gift": "0.0.21",
+    "escolalms/tracker": "0.0.14",
+    "escolalms/translations": "0.0.10",
+    "escolalms/video": "0.0.22",
+    "escolalms/vouchers": "0.1.20",
+    "escolalms/webinar": "0.1.34",
+    "fideloper/proxy": "^4.0",
+    "fruitcake/laravel-cors": "^2.0",
+    "guzzlehttp/guzzle": "^7.3",
+    "laravel/framework": "^8.0",
+    "laravel/helpers": "^1.4",
+    "laravel/horizon": "^5.7",
+    "laravel/passport": "^10.0",
+    "laravel/socialite": "^5.1",
+    "laravel/tinker": "^2.5",
+    "laravel/ui": "^3.0",
+    "predis/predis": "^1.1",
+    "sentry/sentry-laravel": "^2.3",
+    "spatie/laravel-permission": "^3.18",
+    "staudenmeir/laravel-migration-views": "^1.0"
+  },
+  "require-dev": {
+    "barryvdh/laravel-ide-helper": "^2.9",
+    "beyondcode/laravel-dump-server": "^1.0",
+    "brainmaestro/composer-git-hooks": "^2.8",
+    "facade/ignition": "^2.0",
+    "fakerphp/faker": "^1.9.1",
+    "filp/whoops": "^2.0",
+    "friends-of-behat/mink-extension": "^2.4",
+    "mockery/mockery": "^1.0",
+    "nunomaduro/collision": "^5.0",
+    "orchestra/testbench": "v6.37.0",
+    "orchestra/testbench-core": "v6.41.1",
+    "php-mock/php-mock-phpunit": "^2.6",
+    "phpunit/phpunit": "^9.0"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true,
+    "allow-plugins": {
+      "composer/package-versions-deprecated": true,
+      "php-http/discovery": true
+    }
+  },
+  "extra": {
+    "laravel": {
+      "dont-discover": []
+    },
+    "hooks": {
+      "pre-commit": [
+        "echo committing as $(git config user.name)",
+        "php-cs-fixer fix ."
+      ]
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/",
+      "Database\\Factories\\": "database/factories",
+      "Database\\Seeders\\": "database/seeds"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/",
+      "Features\\": "features/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "scripts": {
+    "post-autoload-dump": [
+      "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+      "@php artisan package:discover --ansi"
+    ],
+    "post-root-package-install": [
+      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+    ],
+    "post-create-project-cmd": [
+      "@php artisan key:generate --ansi"
+    ],
+    "siffer": [
+      "./vendor/bin/php-cs-fixer fix ."
+    ]
+  }
+}
