@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateLanguageLinesTable extends Migration
+class CreateCustomLanguageLinesTable extends Migration
 {
     public function up()
     {

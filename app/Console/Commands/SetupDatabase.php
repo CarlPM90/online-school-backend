@@ -5,12 +5,13 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Exception;
 
 class SetupDatabase extends Command
 {
-    protected $signature = 'db:setup {--force : Force fresh migration even if data exists}';
-    protected $description = 'Set up the database with all package migrations and seeders';
+    protected $signature = 'db:setup {--force : Force fresh migration (DESTROYS ALL DATA)}';
+    protected $description = 'Set up the database with all package migrations and seeders (safe for existing data)';
 
     public function handle()
     {
@@ -113,9 +114,37 @@ class SetupDatabase extends Command
             $bar->finish();
             $this->newLine();
 
-            // Run fresh migrations with seeders
-            $this->info('🗃️ Running fresh migrations with seeders...');
-            Artisan::call('migrate:fresh', ['--seed' => true, '--force' => true]);
+            // Clean up any migration conflicts
+            $this->info('🧹 Cleaning up migration conflicts...');
+            $this->cleanupMigrationConflicts();
+
+            // Check if this is first setup or update
+            $this->info('🗃️ Setting up database migrations...');
+            if ($this->option('force') || $this->isFirstTimeSetup()) {
+                if ($this->option('force')) {
+                    $this->warn('⚠️  FORCE FLAG DETECTED - This will destroy all existing data!');
+                    $this->info('📦 Running fresh migrations with seeders...');
+                } else {
+                    $this->info('📦 First-time setup detected - running fresh migrations with seeders...');
+                }
+                Artisan::call('migrate:fresh', ['--seed' => true, '--force' => true]);
+            } else {
+                $this->info('🔄 Existing setup detected - running standard migrations...');
+                Artisan::call('migrate', ['--force' => true]);
+                
+                // Only seed if no users exist
+                try {
+                    $userCount = DB::table('users')->count();
+                    if ($userCount === 0) {
+                        $this->info('🌱 No users found - running seeders...');
+                        Artisan::call('db:seed', ['--force' => true]);
+                    } else {
+                        $this->info('👥 Users exist - skipping seeders to preserve data');
+                    }
+                } catch (Exception $e) {
+                    $this->warn('Could not check user count: ' . $e->getMessage());
+                }
+            }
 
             // Setup Passport
             $this->info('🔐 Setting up Laravel Passport...');
@@ -144,6 +173,64 @@ class SetupDatabase extends Command
             $this->error('❌ Setup failed: ' . $e->getMessage());
             $this->error('Stack trace: ' . $e->getTraceAsString());
             return 1;
+        }
+    }
+
+    private function cleanupMigrationConflicts()
+    {
+        $migrationPath = database_path('migrations');
+        $conflictingMigrations = [];
+
+        // Find migrations with potentially conflicting class names
+        $migrationFiles = glob($migrationPath . '/*.php');
+        $classNames = [];
+
+        foreach ($migrationFiles as $file) {
+            $content = file_get_contents($file);
+            if (preg_match('/class\s+(\w+)\s+extends\s+Migration/', $content, $matches)) {
+                $className = $matches[1];
+                if (isset($classNames[$className])) {
+                    // Found duplicate class name
+                    $conflictingMigrations[] = $file;
+                    $this->warn("Found duplicate migration class: $className in " . basename($file));
+                } else {
+                    $classNames[$className] = $file;
+                }
+            }
+        }
+
+        // Remove conflicting migrations (keep the first one found)
+        foreach ($conflictingMigrations as $conflictFile) {
+            $this->warn("Removing conflicting migration: " . basename($conflictFile));
+            unlink($conflictFile);
+        }
+
+        if (empty($conflictingMigrations)) {
+            $this->info("No migration conflicts found.");
+        }
+    }
+
+    private function isFirstTimeSetup()
+    {
+        try {
+            // Check if migrations table exists and has any records
+            $migrationCount = DB::table('migrations')->count();
+            
+            // If no migrations have been run, it's first time setup
+            if ($migrationCount === 0) {
+                return true;
+            }
+
+            // Check if core tables exist - if not, it's essentially first time
+            $coreTablesExist = Schema::hasTable('users') && 
+                             Schema::hasTable('oauth_clients') && 
+                             Schema::hasTable('model_fields_metadata');
+            
+            return !$coreTablesExist;
+            
+        } catch (Exception $e) {
+            // If we can't query migrations table, it probably doesn't exist = first time
+            return true;
         }
     }
 }
