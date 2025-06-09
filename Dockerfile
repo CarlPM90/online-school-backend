@@ -17,7 +17,7 @@ RUN cp docker/envs/.env.postgres.example /var/www/html/.env \
   && (rm /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini || true) && (pecl uninstall xdebug || true)
   
 RUN composer self-update && composer install --no-scripts 
-RUN chmod +x railway-build.sh init-deployment.sh
+RUN chmod +x setup-database.sh
 RUN chown -R devilbox:devilbox /var/www/
 
-CMD php docker/envs/envs.php && ./init-deployment.sh && /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+CMD php docker/envs/envs.php && /usr/bin/supervisord -c /etc/supervisor/supervisord.conf

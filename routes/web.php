@@ -46,6 +46,12 @@ Route::get('/fix-language-lines', function () {
     }
 });
 
+Route::get('/setup', function () {
+    return view('setup');
+});
+
+Route::get('/setup-database', [App\Http\Controllers\SetupController::class, 'setupDatabase']);
+
 if (App::environment(['local', 'staging', 'testing'])) {
     Route::get('/stripe-test', function () {
         return View::make('stripe-test', ['stripe_publishable_key' => Env::get('PAYMENTS_STRIPE_PUBLISHABLE_KEY', 'pk_test_51Ig8icJ9tg9t712TnCR6sKY9OXwWoFGWH4ERZXoxUVIemnZR0B6Ei0MzjjeuWgOzLYKjPNbT8NbG1ku1T2pGCP4B00GnY0uusI')]);
