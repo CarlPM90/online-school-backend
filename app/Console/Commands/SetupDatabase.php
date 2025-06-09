@@ -185,21 +185,31 @@ class SetupDatabase extends Command
         $migrationFiles = glob($migrationPath . '/*.php');
         $classNames = [];
 
+        // First pass: collect all class names
         foreach ($migrationFiles as $file) {
             $content = file_get_contents($file);
             if (preg_match('/class\s+(\w+)\s+extends\s+Migration/', $content, $matches)) {
                 $className = $matches[1];
-                if (isset($classNames[$className])) {
-                    // Found duplicate class name
-                    $conflictingMigrations[] = $file;
-                    $this->warn("Found duplicate migration class: $className in " . basename($file));
-                } else {
-                    $classNames[$className] = $file;
+                if (!isset($classNames[$className])) {
+                    $classNames[$className] = [];
+                }
+                $classNames[$className][] = $file;
+            }
+        }
+
+        // Second pass: find duplicates
+        foreach ($classNames as $className => $files) {
+            if (count($files) > 1) {
+                $this->warn("Found duplicate migration class: $className in " . count($files) . " files");
+                // Keep the first one, remove the rest
+                for ($i = 1; $i < count($files); $i++) {
+                    $conflictingMigrations[] = $files[$i];
+                    $this->warn("Will remove: " . basename($files[$i]));
                 }
             }
         }
 
-        // Remove conflicting migrations (keep the first one found)
+        // Remove conflicting migrations
         foreach ($conflictingMigrations as $conflictFile) {
             $this->warn("Removing conflicting migration: " . basename($conflictFile));
             unlink($conflictFile);
@@ -207,6 +217,8 @@ class SetupDatabase extends Command
 
         if (empty($conflictingMigrations)) {
             $this->info("No migration conflicts found.");
+        } else {
+            $this->info("Removed " . count($conflictingMigrations) . " conflicting migrations.");
         }
     }
 
