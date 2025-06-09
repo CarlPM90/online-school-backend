@@ -17,9 +17,33 @@ use Illuminate\Support\Env;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\DB;
 
 Route::get('/email', function () {
     return 'Your email is now verified';
+});
+
+Route::get('/fix-language-lines', function () {
+    try {
+        DB::statement('DROP TABLE IF EXISTS language_lines');
+        
+        DB::statement('
+            CREATE TABLE language_lines (
+                id BIGSERIAL PRIMARY KEY,
+                "group" VARCHAR(255) NOT NULL,
+                "key" VARCHAR(255) NOT NULL,
+                text TEXT NOT NULL,
+                created_at TIMESTAMP NULL,
+                updated_at TIMESTAMP NULL
+            )
+        ');
+        
+        DB::statement('CREATE INDEX language_lines_group_key_index ON language_lines ("group", "key")');
+        
+        return 'Language lines table created successfully';
+    } catch (\Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
 });
 
 if (App::environment(['local', 'staging', 'testing'])) {
