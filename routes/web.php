@@ -15,12 +15,27 @@
 use EscolaLms\Payments\Facades\Payments;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
 
 Route::get('/email', function () {
     return 'Your email is now verified';
+});
+
+Route::get('/clear-cache', function () {
+    Artisan::call('config:clear');
+    Artisan::call('route:clear');
+    Artisan::call('view:clear');
+    Artisan::call('cache:clear');
+    
+    return response()->json([
+        'message' => 'All caches cleared!',
+        'cors_paths' => config('cors.paths'),
+        'cors_origins' => config('cors.allowed_origins'),
+        'timestamp' => now()
+    ]);
 });
 
 Route::get('/setup', function () {
