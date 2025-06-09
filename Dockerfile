@@ -19,4 +19,4 @@ RUN cp docker/envs/.env.postgres.example /var/www/html/.env \
 RUN composer self-update && composer install --no-scripts 
 RUN chown -R devilbox:devilbox /var/www/
 
-CMD php docker/envs/envs.php && php artisan migrate --force && /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+CMD php docker/envs/envs.php && php artisan vendor:publish --provider="EscolaLms\Translations\EscolaLmsTranslationsServiceProvider" --tag=migrations --force && php artisan migrate --force && /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
