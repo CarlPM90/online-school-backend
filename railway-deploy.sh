@@ -78,9 +78,15 @@ php artisan vendor:publish --provider="EscolaLms\Auth\AuthServiceProvider" --tag
 php artisan vendor:publish --provider="EscolaLms\Permissions\PermissionsServiceProvider" --tag="seeders" --force
 php artisan vendor:publish --provider="EscolaLms\HeadlessH5P\HeadlessH5PServiceProvider" --tag="seeders" --force
 
-# Run migrations
-echo "🗃️ Running database migrations..."
-php artisan migrate --force
+# Check if database is empty and run fresh migrations if needed
+echo "🗃️ Setting up database..."
+if [ "$FORCE_FRESH_MIGRATION" = "true" ] || php artisan migrate:status | grep -q "No migrations found"; then
+    echo "📦 Fresh database setup requested, running migrate:fresh with seeders..."
+    php artisan migrate:fresh --seed --force
+else
+    echo "🔄 Existing database detected, running standard migrations..."
+    php artisan migrate --force
+fi
 
 # Install Passport keys
 echo "🔐 Installing Passport keys..."
