@@ -19,6 +19,7 @@ RUN cp docker/envs/.env.postgres.example /var/www/html/.env \
   
 RUN composer self-update && composer install --no-scripts 
 RUN chmod +x setup-database.sh
+RUN chmod +x railway-startup.sh
 RUN chown -R devilbox:devilbox /var/www/
 
-CMD php docker/envs/envs.php && /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+CMD php docker/envs/envs.php && ./railway-startup.sh

@@ -1,11 +1,7 @@
 <?php
-// Simple health check that bypasses Laravel
+// Health check endpoint for Railway
+header('Content-Type: text/plain');
+header('Cache-Control: no-cache');
 http_response_code(200);
-header('Content-Type: application/json');
-echo json_encode([
-    'status' => 'healthy',
-    'timestamp' => date('Y-m-d H:i:s'),
-    'php_version' => PHP_VERSION,
-    'server' => $_SERVER['SERVER_SOFTWARE'] ?? 'unknown'
-]);
-exit;
+echo "OK";
+exit(0);
