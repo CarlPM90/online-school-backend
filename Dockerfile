@@ -11,6 +11,7 @@ RUN cp docker/envs/.env.postgres.example /var/www/html/.env \
   && cp docker/conf/supervisor/caddy.conf /etc/supervisor/custom.d/caddy.conf \
   && cp docker/conf/supervisor/scheduler.conf /etc/supervisor/custom.d/scheduler.conf \
   && cp docker/conf/supervisor/horizon.conf /etc/supervisor/custom.d/horizon.conf \
+  && cp docker/conf/supervisor/php-fpm.conf /etc/supervisor/custom.d/php-fpm.conf \
   && cp docker/conf/caddy/Caddyfile /etc/caddy/Caddyfile \
   && cp docker/conf/php/xxx-devilbox-default-php.ini /usr/local/etc/php/conf.d/xxx-devilbox-default-php.ini \
   && cp docker/conf/php/php-fpm-custom.conf /usr/local/etc/php-fpm.d/php-fpm-custom.conf \
