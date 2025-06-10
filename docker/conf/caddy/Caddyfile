@@ -26,11 +26,6 @@
         write_timeout 30s
     }
 
-    # CORS headers for API
-    header {
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
-        Access-Control-Allow-Credentials true
-    }
+    # CORS headers are handled by Laravel middleware
+    # Removed Caddy CORS to prevent duplicate headers
 }

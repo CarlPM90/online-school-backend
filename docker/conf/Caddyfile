@@ -10,24 +10,9 @@ http://localhost:1001 {
     file_server
 
     # Enable PHP-FPM
-    php_fastcgi escola_lms_app:9000 {
-        header_up -Access-Control-Allow-Origin
-        header_down -Access-Control-Allow-Origin
-    }
+    php_fastcgi escola_lms_app:9000
 
-    # Cors logic 
-    @origin header Origin {http.request.header.Origin}
-    header @origin Access-Control-Allow-Origin {http.request.header.Origin}
-
-    #@referer header Referer {http.request.header.Referer}
-    #header @referer Access-Control-Allow-Origin {http.request.header.Referer}
-
-    @excluded { 
-        not header Origin {http.request.header.Origin}
-        #not header Referer {http.request.header.Referer}
-    }
-    header @excluded Access-Control-Allow-Origin *
-
-    header Access-Control-Allow-Credentials true
+    # CORS headers are handled by Laravel middleware
+    # Removed Caddy CORS to prevent duplicate headers
 
 }

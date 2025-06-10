@@ -28,12 +28,30 @@ class FixCorsHeaders
 
         $response = $next($request);
 
-        // Remove any existing CORS headers to prevent duplicates
-        $response->headers->remove('Access-Control-Allow-Origin');
-        $response->headers->remove('Access-Control-Allow-Methods');
-        $response->headers->remove('Access-Control-Allow-Headers');
-        $response->headers->remove('Access-Control-Allow-Credentials');
-        $response->headers->remove('Access-Control-Max-Age');
+        // Remove ALL CORS headers more aggressively
+        $corsHeaders = [
+            'Access-Control-Allow-Origin',
+            'Access-Control-Allow-Methods', 
+            'Access-Control-Allow-Headers',
+            'Access-Control-Allow-Credentials',
+            'Access-Control-Max-Age',
+            'Access-Control-Expose-Headers',
+            'Vary'
+        ];
+        
+        foreach ($corsHeaders as $header) {
+            $response->headers->remove($header);
+            // Also remove with different casing
+            $response->headers->remove(strtolower($header));
+            $response->headers->remove(strtoupper($header));
+        }
+        
+        // Clear any header bags that might be duplicating
+        if (method_exists($response->headers, 'replace')) {
+            foreach ($corsHeaders as $header) {
+                $response->headers->replace([$header => null]);
+            }
+        }
 
         // Add clean CORS headers
         $origin = $request->header('Origin');
