@@ -21,6 +21,19 @@ Route::get('/debug-sentry', function () {
     throw new \Exception('Test Sentry error!');
 });
 
+// Simple API health check to test if API routing works
+Route::get('/', function () {
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'API is working',
+        'timestamp' => now()->toISOString()
+    ]);
+});
+
+Route::get('/simple-test', function () {
+    return response()->json(['test' => 'simple api route works']);
+});
+
 //TODO Removed after testing jitsi components
 Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/seeds/consultations/{author?}/{user?}', function ($author = null, $user = null) {

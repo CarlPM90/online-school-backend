@@ -34,8 +34,25 @@ try {
     // Test Laravel DB facade
     echo "\n4. Testing Laravel DB...\n";
     $app->boot();
-    $users = DB::table('users')->count();
+    
+    // Use the app container instead of facade
+    $db = $app->make('db');
+    $users = $db->table('users')->count();
     echo "✅ Laravel DB working - Users count: $users\n";
+    
+    // Test if routes are loaded
+    echo "\n5. Testing Routes...\n";
+    $router = $app->make('router');
+    $routes = $router->getRoutes();
+    echo "✅ Routes loaded - Count: " . count($routes) . "\n";
+    
+    // Check if our /up route exists
+    foreach ($routes as $route) {
+        if ($route->uri() === 'up') {
+            echo "✅ Found /up route\n";
+            break;
+        }
+    }
     
     echo "\n🚀 All tests passed! Laravel should be working.\n";
     

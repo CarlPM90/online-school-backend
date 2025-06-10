@@ -110,6 +110,13 @@ sleep 3
 echo "🔍 Testing Laravel application..."
 php artisan --version || echo "❌ Laravel artisan command failed"
 
+# Clear any problematic caches first
+echo "🧹 Clearing Laravel caches..."
+php artisan config:clear || echo "❌ Config clear failed"
+php artisan route:clear || echo "❌ Route clear failed"
+php artisan view:clear || echo "❌ View clear failed"
+php artisan cache:clear || echo "❌ Cache clear failed"
+
 # Check if Laravel can handle basic requests
 echo "🧪 Testing Laravel route cache..."
 php artisan route:cache || echo "❌ Route cache failed"
