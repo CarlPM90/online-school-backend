@@ -13,9 +13,9 @@ return [
     |
     */
 
-    'private_key' => env('PASSPORT_PRIVATE_KEY'),
+    'private_key' => env('PASSPORT_PRIVATE_KEY') ? base64_decode(env('PASSPORT_PRIVATE_KEY')) : null,
 
-    'public_key' => env('PASSPORT_PUBLIC_KEY'),
+    'public_key' => env('PASSPORT_PUBLIC_KEY') ? base64_decode(env('PASSPORT_PUBLIC_KEY')) : null,
 
     /*
     |--------------------------------------------------------------------------
