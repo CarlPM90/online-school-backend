@@ -23,4 +23,4 @@ RUN chmod +x railway-startup.sh
 RUN chmod +x health-check-ready.sh
 RUN chown -R devilbox:devilbox /var/www/
 
-CMD php docker/envs/envs.php && ./railway-startup.sh
+CMD php docker/envs/envs.php && php artisan config:clear && php artisan config:cache && php artisan route:cache && php artisan migrate && /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
