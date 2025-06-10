@@ -75,3 +75,43 @@ Route::get('config', function () {
         'status' => 'operational'
     ]);
 });
+
+// Public settings endpoint for frontend
+Route::get('public-settings', function () {
+    try {
+        $settings = [];
+        
+        // Try to get PencilSpaces URL from settings table
+        try {
+            $pencilSpacesSetting = DB::table('settings')
+                ->where('key', 'pencil_spaces_url')
+                ->where('public', true)
+                ->first();
+                
+            if ($pencilSpacesSetting) {
+                $settings['pencil_spaces_url'] = json_decode($pencilSpacesSetting->value, true);
+            }
+        } catch (Exception $e) {
+            // Fallback to environment variable
+            $settings['pencil_spaces_url'] = env('PENCIL_SPACES_URL', 'https://pencilspaces.com');
+        }
+        
+        // Add other public settings as needed
+        $settings['app_name'] = config('app.name');
+        $settings['app_url'] = config('app.url');
+        
+        return response()->json([
+            'status' => 'success',
+            'settings' => $settings
+        ]);
+        
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'fallback_settings' => [
+                'pencil_spaces_url' => 'https://pencilspaces.com'
+            ]
+        ], 500);
+    }
+});
