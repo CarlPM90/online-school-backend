@@ -39,12 +39,25 @@ $app->singleton(
 
 // CRITICAL: Manually bind config service before anything else
 $app->singleton('config', function ($app) {
-    return new \Illuminate\Config\Repository();
+    $config = new \Illuminate\Config\Repository();
+    
+    // Load essential config files directly
+    $configPath = base_path('config');
+    if (file_exists($configPath . '/app.php')) {
+        $config->set('app', require $configPath . '/app.php');
+    }
+    if (file_exists($configPath . '/database.php')) {
+        $config->set('database', require $configPath . '/database.php');
+    }
+    if (file_exists($configPath . '/passport.php')) {
+        $config->set('passport', require $configPath . '/passport.php');
+    }
+    
+    return $config;
 });
 
 // Force register core Laravel service providers that may not be loading
 $criticalProviders = [
-    \Illuminate\Config\ConfigServiceProvider::class, // CRITICAL: Must be first
     \Illuminate\Foundation\Providers\FoundationServiceProvider::class,
     \Illuminate\Database\DatabaseServiceProvider::class,
     \Illuminate\Filesystem\FilesystemServiceProvider::class,
