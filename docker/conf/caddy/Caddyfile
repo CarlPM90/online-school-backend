@@ -1,37 +1,33 @@
-# This file is used for building docker image 
-http://:80 {
+# Railway Caddy configuration - binds to all interfaces
+:80 {
     # Resolve the root directory for the app
     root * /var/www/html/public
 
-    # Provide Zstd and Gzip compression
-    encode zstd gzip
+    # Health check endpoints - serve directly for speed
+    respond /up "OK" 200
+    respond /health "OK" 200
+    respond /health.php "OK" 200
+
+    # Enable logging for debugging
+    log {
+        output stdout
+        format console
+    }
 
     # Allow caddy to serve static files
     file_server
 
-    # Health check endpoints - serve directly without PHP processing for speed
-    respond /health.php "OK" 200
-    respond /up "OK" 200
-
-    # Enable PHP-FPM for all other requests
-    php_fastcgi localhost:9000 {
-        header_up -Access-Control-Allow-Origin
-        header_down -Access-Control-Allow-Origin
+    # Enable PHP-FPM for Laravel routes
+    php_fastcgi 127.0.0.1:9000 {
+        # Trust Railway proxies
+        trusted_proxies private_ranges
     }
 
-    # Cors logic 
-    @origin header Origin {http.request.header.Origin}
-    header @origin Access-Control-Allow-Origin {http.request.header.Origin}
-
-    #@referer header Referer {http.request.header.Referer}
-    #header @referer Access-Control-Allow-Origin {http.request.header.Referer}
-
-    @excluded { 
-        not header Origin {http.request.header.Origin}
-        #not header Referer {http.request.header.Referer}
+    # CORS headers for API
+    header {
+        Access-Control-Allow-Origin *
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+        Access-Control-Allow-Credentials true
     }
-    header @excluded Access-Control-Allow-Origin *
-
-    header Access-Control-Allow-Credentials true
-
 }
