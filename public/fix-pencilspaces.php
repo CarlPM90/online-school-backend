@@ -66,8 +66,8 @@ try {
                 'pencil_spaces_url',
                 'general', // Default group
                 json_encode($pencilSpacesUrl),
-                true,  // public
-                false, // enumerable
+                't',  // public (PostgreSQL boolean)
+                'f', // enumerable (PostgreSQL boolean)
                 0,     // sort
                 'string', // type
                 $currentTime,
