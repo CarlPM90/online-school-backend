@@ -351,14 +351,22 @@ class SetupDatabase extends Command
             
             $this->info('✅ New Passport keys generated');
             
+            // Always show the keys for backup, then try to set automatically
+            $privateKeyB64 = base64_encode($privateKey);
+            $publicKeyB64 = base64_encode($publicKey);
+            
+            $this->warn('🔑 Generated Passport Keys (backup these):');
+            $this->warn('PASSPORT_PRIVATE_KEY=' . $privateKeyB64);
+            $this->warn('PASSPORT_PUBLIC_KEY=' . $publicKeyB64);
+            
             // Try to set Railway environment variables automatically
             if ($this->isRailwayEnvironment()) {
                 $this->info('🚂 Attempting to set Railway environment variables...');
                 $this->setRailwayEnvVars($privateKey, $publicKey);
             } else {
                 $this->warn('💡 Set these environment variables for persistent deployment:');
-                $this->warn('PASSPORT_PRIVATE_KEY=' . base64_encode($privateKey));
-                $this->warn('PASSPORT_PUBLIC_KEY=' . base64_encode($publicKey));
+                $this->warn('PASSPORT_PRIVATE_KEY=' . $privateKeyB64);
+                $this->warn('PASSPORT_PUBLIC_KEY=' . $publicKeyB64);
             }
         }
     }
