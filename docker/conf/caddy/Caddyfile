@@ -3,15 +3,14 @@
     # Resolve the root directory for the app
     root * /var/www/html/public
 
-    # Health check endpoints - serve directly for speed
-    respond /up "OK" 200
-    respond /health "OK" 200
-    respond /health.php "OK" 200
+    # Health check endpoints are handled by Laravel routes
+    # Remove hardcoded responses to allow proper Laravel health checks
 
     # Enable logging for debugging
     log {
         output stdout
         format console
+        level INFO
     }
 
     # Allow caddy to serve static files
@@ -21,6 +20,10 @@
     php_fastcgi 127.0.0.1:9000 {
         # Trust Railway proxies
         trusted_proxies private_ranges
+        # Add timeout settings for stability
+        dial_timeout 10s
+        read_timeout 30s
+        write_timeout 30s
     }
 
     # CORS headers for API

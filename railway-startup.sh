@@ -97,5 +97,23 @@ php artisan storage:link
 echo "✅ Railway deployment setup completed!"
 
 # Start the application
-echo "🌐 Starting application..."
-exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+echo "🌐 Starting application services..."
+
+# Start supervisord in background
+/usr/bin/supervisord -c /etc/supervisor/supervisord.conf &
+SUPERVISORD_PID=$!
+
+# Wait a moment for supervisord to initialize
+sleep 3
+
+# Run readiness check
+echo "🔍 Running service readiness verification..."
+chmod +x ./health-check-ready.sh
+if ./health-check-ready.sh; then
+    echo "🚀 All services ready! Railway health checks should now succeed."
+    # Keep the container alive by waiting for supervisord
+    wait $SUPERVISORD_PID
+else
+    echo "💥 Service readiness check failed!"
+    exit 1
+fi
