@@ -114,6 +114,33 @@ Route::get('config', function () {
     ]);
 });
 
+// Debug endpoint for PencilSpaces login issues
+Route::get('pencil-spaces/debug', function () {
+    try {
+        return response()->json([
+            'pencil_spaces_debug' => [
+                'authenticated' => auth()->check(),
+                'user_id' => auth()->id(),
+                'user_email' => auth()->user()->email ?? null,
+                'pencil_spaces_package' => class_exists('EscolaLms\PencilSpaces\Services\PencilSpaceService'),
+                'instructions' => [
+                    'If authenticated=false, user needs to login first',
+                    'Then try /api/pencil-spaces/login again',
+                    'The 500 error is likely due to missing authentication'
+                ]
+            ]
+        ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'instructions' => [
+                'User must be authenticated to access PencilSpaces',
+                'Check if user is logged in with valid token'
+            ]
+        ]);
+    }
+});
+
 // Public settings endpoint for frontend
 Route::get('public-settings', function () {
     try {
