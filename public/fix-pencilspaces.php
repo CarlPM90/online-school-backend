@@ -28,7 +28,7 @@ try {
     $results = [];
     $currentTime = date('Y-m-d H:i:s');
     
-    // First, check the structure of settings table
+    // First, check the structure of settings table and constraints
     try {
         $columnsStmt = $pdo->prepare("
             SELECT column_name 
@@ -38,8 +38,25 @@ try {
         $columnsStmt->execute();
         $columns = array_column($columnsStmt->fetchAll(), 'column_name');
         $results['settings_table_columns'] = $columns;
+        
+        // Check for check constraints to see valid type values
+        $constraintsStmt = $pdo->prepare("
+            SELECT constraint_name, check_clause
+            FROM information_schema.check_constraints 
+            WHERE constraint_name LIKE '%settings_type%'
+        ");
+        $constraintsStmt->execute();
+        $constraints = $constraintsStmt->fetchAll();
+        $results['type_constraints'] = $constraints;
+        
+        // Look at existing settings to see what types are used
+        $existingTypesStmt = $pdo->prepare("SELECT DISTINCT type FROM settings LIMIT 10");
+        $existingTypesStmt->execute();
+        $existingTypes = array_column($existingTypesStmt->fetchAll(), 'type');
+        $results['existing_types'] = $existingTypes;
+        
     } catch (Exception $e) {
-        $results['settings_table_columns'] = "Error: " . $e->getMessage();
+        $results['settings_table_info'] = "Error: " . $e->getMessage();
     }
 
     // Try to add to 'settings' table with correct columns
@@ -57,23 +74,39 @@ try {
             $hasEnumerable = in_array('enumerable', $columns);
             $hasSort = in_array('sort', $columns);
             
-            // Build insert based on available columns - include all required fields
-            $insertStmt = $pdo->prepare("
-                INSERT INTO settings (key, \"group\", value, public, enumerable, sort, type, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $insertStmt->execute([
-                'pencil_spaces_url',
-                'general', // Default group
-                json_encode($pencilSpacesUrl),
-                't',  // public (PostgreSQL boolean)
-                'f', // enumerable (PostgreSQL boolean)
-                0,     // sort
-                'string', // type
-                $currentTime,
-                $currentTime
-            ]);
-            $results['settings_table'] = "✅ Added PencilSpaces URL to settings table";
+            // Try different type values to find one that works
+            $typesToTry = ['text', 'string', 'url', 'varchar', 'input', 'textarea'];
+            $insertSuccessful = false;
+            
+            foreach ($typesToTry as $typeValue) {
+                try {
+                    $insertStmt = $pdo->prepare("
+                        INSERT INTO settings (key, \"group\", value, public, enumerable, sort, type, created_at, updated_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    $insertStmt->execute([
+                        'pencil_spaces_url',
+                        'general', // Default group
+                        json_encode($pencilSpacesUrl),
+                        't',  // public (PostgreSQL boolean)
+                        'f', // enumerable (PostgreSQL boolean)
+                        0,     // sort
+                        $typeValue, // Try different type values
+                        $currentTime,
+                        $currentTime
+                    ]);
+                    $insertSuccessful = true;
+                    $results['settings_table'] = "✅ Added PencilSpaces URL to settings table with type: {$typeValue}";
+                    break;
+                } catch (Exception $e) {
+                    $results["type_attempt_{$typeValue}"] = "❌ Failed with type '{$typeValue}': " . $e->getMessage();
+                    continue;
+                }
+            }
+            
+            if (!$insertSuccessful) {
+                $results['settings_table'] = "❌ Failed to insert with any type value";
+            }
         } else {
             $results['settings_table'] = "✅ PencilSpaces URL already exists in settings table";
         }
