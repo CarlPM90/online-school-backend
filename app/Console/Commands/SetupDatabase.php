@@ -215,13 +215,21 @@ class SetupDatabase extends Command
                 $this->warn('Storage link already exists or failed: ' . $e->getMessage());
             }
 
-            // Cache configurations
-            $this->info('⚙️ Clearing and caching configurations...');
+            // Clear configurations but don't cache for Railway
+            $this->info('⚙️ Clearing configurations for Railway deployment...');
             Artisan::call('config:clear');
             Artisan::call('route:clear');
             Artisan::call('view:clear');
-            Artisan::call('config:cache');
-            Artisan::call('route:cache');
+            Artisan::call('cache:clear');
+            
+            // Don't cache config/routes on Railway - causes container issues
+            if (!$this->isRailwayEnvironment()) {
+                Artisan::call('config:cache');
+                Artisan::call('route:cache');
+                $this->info('✅ Configurations cached');
+            } else {
+                $this->info('⚠️ Skipping config cache for Railway compatibility');
+            }
 
             $this->info('✅ Database setup completed successfully!');
             $this->info('📚 API documentation available at: /api/documentation');
@@ -308,9 +316,6 @@ class SetupDatabase extends Command
 
     private function ensurePassportKeys()
     {
-        $privateKeyPath = storage_path('oauth-private.key');
-        $publicKeyPath = storage_path('oauth-public.key');
-        
         // Check if keys exist from environment variables
         $envPrivateKey = env('PASSPORT_PRIVATE_KEY');
         $envPublicKey = env('PASSPORT_PUBLIC_KEY');
@@ -318,33 +323,27 @@ class SetupDatabase extends Command
         if ($envPrivateKey && $envPublicKey) {
             $this->info('🔑 Using Passport keys from environment variables');
             
-            // Decode base64 encoded keys if needed
+            // Validate the keys are valid
             $privateKeyContent = base64_decode($envPrivateKey, true) ?: $envPrivateKey;
             $publicKeyContent = base64_decode($envPublicKey, true) ?: $envPublicKey;
             
-            // Write keys to storage
-            file_put_contents($privateKeyPath, $privateKeyContent);
-            file_put_contents($publicKeyPath, $publicKeyContent);
-            
-            // Set appropriate permissions
-            chmod($privateKeyPath, 0600);
-            chmod($publicKeyPath, 0644);
-            
-            $this->info('✅ Passport keys restored from environment');
-            return;
+            if (strpos($privateKeyContent, '-----BEGIN PRIVATE KEY-----') !== false && 
+                strpos($publicKeyContent, '-----BEGIN PUBLIC KEY-----') !== false) {
+                $this->info('✅ Valid Passport keys found in environment variables');
+                return;
+            } else {
+                $this->warn('⚠️ Environment variables contain invalid keys, regenerating...');
+            }
         }
         
-        // Check if keys already exist on disk
-        if (file_exists($privateKeyPath) && file_exists($publicKeyPath)) {
-            $this->info('✅ Passport keys already exist');
-            return;
-        }
-        
-        // Generate new keys
+        // Generate new keys to temporary files
         $this->info('🔑 Generating new Passport keys...');
+        $privateKeyPath = storage_path('oauth-private.key');
+        $publicKeyPath = storage_path('oauth-public.key');
+        
         Artisan::call('passport:keys', ['--force' => true]);
         
-        // Store keys as environment variables for next deployment
+        // Read the generated keys and prepare for environment variables
         if (file_exists($privateKeyPath) && file_exists($publicKeyPath)) {
             $privateKey = file_get_contents($privateKeyPath);
             $publicKey = file_get_contents($publicKeyPath);
@@ -368,6 +367,11 @@ class SetupDatabase extends Command
                 $this->warn('PASSPORT_PRIVATE_KEY=' . $privateKeyB64);
                 $this->warn('PASSPORT_PUBLIC_KEY=' . $publicKeyB64);
             }
+            
+            // Clean up temporary files - we use env vars, not files
+            unlink($privateKeyPath);
+            unlink($publicKeyPath);
+            $this->info('🧹 Cleaned up temporary key files');
         }
     }
 

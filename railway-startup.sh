@@ -15,20 +15,22 @@ echo "✅ Database connection established!"
 echo "🔑 Generating application key..."
 php artisan key:generate --force
 
-# Clear and cache configuration  
-echo "⚙️ Clearing and caching configuration..."
+# Clear all caches first - CRITICAL for Railway deployments
+echo "⚙️ Clearing all caches..."
 php artisan config:clear
 php artisan route:clear  
 php artisan view:clear
 php artisan cache:clear
 
-# Remove any cached config files manually
+# Remove any cached config files manually - Railway containers need this
 rm -f bootstrap/cache/config.php
 rm -f bootstrap/cache/routes.php  
 rm -f bootstrap/cache/services.php
+rm -f bootstrap/cache/packages.php
+rm -f bootstrap/cache/compiled.php
 
-# Rebuild caches
-php artisan config:cache
+# Don't cache config on Railway - causes issues with dynamic containers
+echo "⚠️ Skipping config cache to prevent Railway deployment issues"
 
 # Publish all package migrations
 echo "📝 Publishing package migrations..."

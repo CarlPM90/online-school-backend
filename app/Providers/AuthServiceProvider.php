@@ -24,6 +24,8 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
         Passport::routes();
-        Passport::loadKeysFrom(__DIR__ . '/../../storage');
+        
+        // Let Passport use keys from config (environment variables)
+        // Don't override with loadKeysFrom() for Railway deployment compatibility
     }
 }
