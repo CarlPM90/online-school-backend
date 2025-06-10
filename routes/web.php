@@ -46,7 +46,17 @@ Route::get('/health', function () {
 });
 
 Route::get('/up', function () {
-    return response('OK', 200);
+    try {
+        // Simple health check without database dependency
+        return response('OK', 200, [
+            'Content-Type' => 'text/plain',
+            'Cache-Control' => 'no-cache'
+        ]);
+    } catch (\Exception $e) {
+        return response('ERROR', 500, [
+            'Content-Type' => 'text/plain'
+        ]);
+    }
 });
 
 Route::get('/clear-cache', function () {

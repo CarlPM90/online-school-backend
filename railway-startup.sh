@@ -106,6 +106,14 @@ SUPERVISORD_PID=$!
 # Wait a moment for supervisord to initialize
 sleep 3
 
+# Test Laravel application before declaring ready
+echo "🔍 Testing Laravel application..."
+php artisan --version || echo "❌ Laravel artisan command failed"
+
+# Check if Laravel can handle basic requests
+echo "🧪 Testing Laravel route cache..."
+php artisan route:cache || echo "❌ Route cache failed"
+
 # Run readiness check
 echo "🔍 Running service readiness verification..."
 chmod +x ./health-check-ready.sh
@@ -115,5 +123,7 @@ if ./health-check-ready.sh; then
     wait $SUPERVISORD_PID
 else
     echo "💥 Service readiness check failed!"
+    echo "🔍 Laravel error log:"
+    tail -20 /var/www/html/storage/logs/laravel.log 2>/dev/null || echo "No Laravel log found"
     exit 1
 fi
