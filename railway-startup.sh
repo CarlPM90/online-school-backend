@@ -83,23 +83,13 @@ php artisan vendor:publish --provider="EscolaLms\PencilSpaces\PencilSpacesServic
 # Also publish Laravel Passport migrations
 php artisan vendor:publish --provider="Laravel\Passport\PassportServiceProvider" --tag="migrations" --force
 
-# Check if database is empty and run fresh migrations if needed
-echo "🗃️ Setting up database..."
-if [ "$FORCE_FRESH_MIGRATION" = "true" ] || ! php artisan migrate:status | grep -q "Migration table created successfully" 2>/dev/null; then
-    echo "📦 Fresh database setup requested, running migrate:fresh with seeders..."
-    php artisan migrate:fresh --seed --force
+# Use our comprehensive database setup command
+echo "🗃️ Setting up database and Passport..."
+if [ "$FORCE_FRESH_MIGRATION" = "true" ]; then
+    php artisan db:setup --force
 else
-    echo "🔄 Existing database detected, running standard migrations..."
-    php artisan migrate --force
+    php artisan db:setup
 fi
-
-# Install Passport keys
-echo "🔐 Installing Passport keys..."
-php artisan passport:keys --force
-
-# Create Passport client
-echo "👤 Creating Passport client..."
-php artisan passport:client --personal --no-interaction
 
 # Create storage link
 echo "🔗 Creating storage link..."

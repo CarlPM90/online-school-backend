@@ -160,17 +160,20 @@ class SetupDatabase extends Command
                 }
             }
 
-            // Setup Passport
-            if (!$skipDestructiveOps) {
-                $this->info('🔐 Setting up Laravel Passport...');
-                try {
-                    Artisan::call('passport:keys', ['--force' => true]);
+            // Setup Passport - ALWAYS ensure keys exist for API authentication
+            $this->info('🔐 Setting up Laravel Passport keys...');
+            try {
+                $this->ensurePassportKeys();
+                
+                // Only create new client if no clients exist or if force flag is set
+                if (!$skipDestructiveOps || $this->needsPassportClient()) {
                     Artisan::call('passport:client', ['--personal' => true, '--no-interaction' => true]);
-                } catch (Exception $e) {
-                    $this->warn('Passport setup warning: ' . $e->getMessage());
+                    $this->info('✅ Passport client created');
+                } else {
+                    $this->info('✅ Passport client already exists');
                 }
-            } else {
-                $this->info('🔐 Skipping Passport setup (data exists)...');
+            } catch (Exception $e) {
+                $this->warn('Passport setup warning: ' . $e->getMessage());
             }
 
             // Fix failed_jobs table and clear encrypted job data
@@ -301,5 +304,108 @@ class SetupDatabase extends Command
             // If we can't query migrations table, it probably doesn't exist = first time
             return true;
         }
+    }
+
+    private function ensurePassportKeys()
+    {
+        $privateKeyPath = storage_path('oauth-private.key');
+        $publicKeyPath = storage_path('oauth-public.key');
+        
+        // Check if keys exist from environment variables
+        $envPrivateKey = env('PASSPORT_PRIVATE_KEY');
+        $envPublicKey = env('PASSPORT_PUBLIC_KEY');
+        
+        if ($envPrivateKey && $envPublicKey) {
+            $this->info('🔑 Using Passport keys from environment variables');
+            
+            // Decode base64 encoded keys if needed
+            $privateKeyContent = base64_decode($envPrivateKey, true) ?: $envPrivateKey;
+            $publicKeyContent = base64_decode($envPublicKey, true) ?: $envPublicKey;
+            
+            // Write keys to storage
+            file_put_contents($privateKeyPath, $privateKeyContent);
+            file_put_contents($publicKeyPath, $publicKeyContent);
+            
+            // Set appropriate permissions
+            chmod($privateKeyPath, 0600);
+            chmod($publicKeyPath, 0644);
+            
+            $this->info('✅ Passport keys restored from environment');
+            return;
+        }
+        
+        // Check if keys already exist on disk
+        if (file_exists($privateKeyPath) && file_exists($publicKeyPath)) {
+            $this->info('✅ Passport keys already exist');
+            return;
+        }
+        
+        // Generate new keys
+        $this->info('🔑 Generating new Passport keys...');
+        Artisan::call('passport:keys', ['--force' => true]);
+        
+        // Store keys as environment variables for next deployment
+        if (file_exists($privateKeyPath) && file_exists($publicKeyPath)) {
+            $privateKey = file_get_contents($privateKeyPath);
+            $publicKey = file_get_contents($publicKeyPath);
+            
+            $this->info('✅ New Passport keys generated');
+            
+            // Try to set Railway environment variables automatically
+            if ($this->isRailwayEnvironment()) {
+                $this->info('🚂 Attempting to set Railway environment variables...');
+                $this->setRailwayEnvVars($privateKey, $publicKey);
+            } else {
+                $this->warn('💡 Set these environment variables for persistent deployment:');
+                $this->warn('PASSPORT_PRIVATE_KEY=' . base64_encode($privateKey));
+                $this->warn('PASSPORT_PUBLIC_KEY=' . base64_encode($publicKey));
+            }
+        }
+    }
+
+    private function needsPassportClient()
+    {
+        try {
+            if (!Schema::hasTable('oauth_clients')) {
+                return true;
+            }
+            
+            $clientCount = DB::table('oauth_clients')->where('personal_access_client', true)->count();
+            return $clientCount === 0;
+        } catch (Exception $e) {
+            return true;
+        }
+    }
+
+    private function isRailwayEnvironment()
+    {
+        return !empty(env('RAILWAY_ENVIRONMENT')) || !empty(env('RAILWAY_PROJECT_ID'));
+    }
+
+    private function setRailwayEnvVars($privateKey, $publicKey)
+    {
+        $privateKeyB64 = base64_encode($privateKey);
+        $publicKeyB64 = base64_encode($publicKey);
+        
+        // Try using Railway CLI if available
+        $commands = [
+            "railway variables set PASSPORT_PRIVATE_KEY=\"{$privateKeyB64}\"",
+            "railway variables set PASSPORT_PUBLIC_KEY=\"{$publicKeyB64}\""
+        ];
+        
+        foreach ($commands as $command) {
+            $result = shell_exec($command . ' 2>&1');
+            if (strpos($result, 'error') !== false || strpos($result, 'Error') !== false) {
+                $this->warn("Failed to set env var via Railway CLI: {$result}");
+                $this->warn('💡 Manually set these environment variables in Railway dashboard:');
+                $this->warn("PASSPORT_PRIVATE_KEY={$privateKeyB64}");
+                $this->warn("PASSPORT_PUBLIC_KEY={$publicKeyB64}");
+                return false;
+            }
+        }
+        
+        $this->info('✅ Environment variables set successfully via Railway CLI');
+        $this->warn('🔄 Redeploy required for changes to take effect');
+        return true;
     }
 }
