@@ -176,6 +176,14 @@ class SetupDatabase extends Command
                 $this->warn('Passport setup warning: ' . $e->getMessage());
             }
 
+            // Setup PencilSpaces configuration
+            $this->info('✏️ Setting up PencilSpaces configuration...');
+            try {
+                $this->setupPencilSpacesConfig();
+            } catch (Exception $e) {
+                $this->warn('PencilSpaces setup warning: ' . $e->getMessage());
+            }
+
             // Fix failed_jobs table and clear encrypted job data
             $this->info('🔧 Fixing failed_jobs table and clearing problematic jobs...');
             try {
@@ -419,5 +427,52 @@ class SetupDatabase extends Command
         $this->info('✅ Environment variables set successfully via Railway CLI');
         $this->warn('🔄 Redeploy required for changes to take effect');
         return true;
+    }
+
+    private function setupPencilSpacesConfig()
+    {
+        // Check if settings table exists (from escolalms/settings package)
+        if (!Schema::hasTable('settings')) {
+            $this->warn('Settings table not found - running migrations first...');
+            return;
+        }
+
+        // Add PencilSpaces URL setting if it doesn't exist
+        $pencilSpacesUrl = env('PENCIL_SPACES_URL', 'https://pencilspaces.com');
+        
+        $existingSetting = DB::table('settings')
+            ->where('key', 'pencil_spaces_url')
+            ->first();
+
+        if (!$existingSetting) {
+            DB::table('settings')->insert([
+                'key' => 'pencil_spaces_url',
+                'value' => json_encode($pencilSpacesUrl),
+                'type' => 'string',
+                'public' => true,
+                'readonly' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $this->info("✅ Added PencilSpaces URL setting: {$pencilSpacesUrl}");
+        } else {
+            $this->info('✅ PencilSpaces URL setting already exists');
+        }
+
+        // Also add as backup in escolalms_settings table if it exists
+        if (Schema::hasTable('escolalms_settings')) {
+            $existingEscolaSetting = DB::table('escolalms_settings')
+                ->where('key', 'pencil_spaces_url')
+                ->first();
+
+            if (!$existingEscolaSetting) {
+                DB::table('escolalms_settings')->insert([
+                    'key' => 'pencil_spaces_url',
+                    'value' => $pencilSpacesUrl,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
     }
 }
