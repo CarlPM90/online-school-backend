@@ -15,12 +15,17 @@ echo "✅ Database connection established!"
 echo "🔑 Generating application key..."
 php artisan key:generate --force
 
-# Clear and cache configuration
+# Clear and cache configuration  
 echo "⚙️ Clearing and caching configuration..."
 php artisan config:clear
 php artisan route:clear  
 php artisan view:clear
 php artisan cache:clear
+
+# Remove any cached config files manually
+rm -f bootstrap/cache/config.php
+rm -f bootstrap/cache/routes.php  
+rm -f bootstrap/cache/services.php
 
 # Rebuild caches
 php artisan config:cache
