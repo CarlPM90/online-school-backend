@@ -24,26 +24,72 @@ try {
     $results = [];
     $currentTime = date('Y-m-d H:i:s');
     
-    // Try to add to 'settings' table
+    // First, check the structure of settings table
+    try {
+        $columnsStmt = $pdo->prepare("
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'settings' AND table_schema = 'public'
+        ");
+        $columnsStmt->execute();
+        $columns = array_column($columnsStmt->fetchAll(), 'column_name');
+        $results['settings_table_columns'] = $columns;
+    } catch (Exception $e) {
+        $results['settings_table_columns'] = "Error: " . $e->getMessage();
+    }
+
+    // Try to add to 'settings' table with correct columns
     try {
         $checkStmt = $pdo->prepare("SELECT * FROM settings WHERE key = ?");
         $checkStmt->execute(['pencil_spaces_url']);
         $existingSetting = $checkStmt->fetch();
 
         if (!$existingSetting) {
-            $insertStmt = $pdo->prepare("
-                INSERT INTO settings (key, value, type, public, readonly, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ");
-            $insertStmt->execute([
-                'pencil_spaces_url',
-                json_encode($pencilSpacesUrl),
-                'string',
-                true,
-                false,
-                $currentTime,
-                $currentTime
-            ]);
+            // Determine which columns exist and build insert accordingly
+            $hasPublic = in_array('public', $columns);
+            $hasReadonly = in_array('readonly', $columns);
+            $hasType = in_array('type', $columns);
+            
+            if ($hasPublic && $hasReadonly && $hasType) {
+                $insertStmt = $pdo->prepare("
+                    INSERT INTO settings (key, value, type, public, readonly, created_at, updated_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ");
+                $insertStmt->execute([
+                    'pencil_spaces_url',
+                    json_encode($pencilSpacesUrl),
+                    'string',
+                    true,
+                    false,
+                    $currentTime,
+                    $currentTime
+                ]);
+            } elseif ($hasPublic && $hasType) {
+                $insertStmt = $pdo->prepare("
+                    INSERT INTO settings (key, value, type, public, created_at, updated_at) 
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                $insertStmt->execute([
+                    'pencil_spaces_url',
+                    json_encode($pencilSpacesUrl),
+                    'string',
+                    true,
+                    $currentTime,
+                    $currentTime
+                ]);
+            } else {
+                // Minimal insert - just key and value
+                $insertStmt = $pdo->prepare("
+                    INSERT INTO settings (key, value, created_at, updated_at) 
+                    VALUES (?, ?, ?, ?)
+                ");
+                $insertStmt->execute([
+                    'pencil_spaces_url',
+                    json_encode($pencilSpacesUrl),
+                    $currentTime,
+                    $currentTime
+                ]);
+            }
             $results['settings_table'] = "✅ Added PencilSpaces URL to settings table";
         } else {
             $results['settings_table'] = "✅ PencilSpaces URL already exists in settings table";
@@ -87,6 +133,26 @@ try {
         }
     } catch (Exception $e) {
         $results['escolalms_settings_table'] = "❌ escolalms_settings table: " . $e->getMessage();
+    }
+
+    // Check if pencil_space_accounts table has any configuration
+    try {
+        $pencilStmt = $pdo->prepare("SELECT COUNT(*) as count FROM pencil_space_accounts");
+        $pencilStmt->execute();
+        $pencilCount = $pencilStmt->fetch()['count'];
+        $results['pencil_space_accounts'] = "ℹ️ Found {$pencilCount} records in pencil_space_accounts table";
+        
+        // Check the structure of pencil_space_accounts
+        $pencilColumnsStmt = $pdo->prepare("
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'pencil_space_accounts' AND table_schema = 'public'
+        ");
+        $pencilColumnsStmt->execute();
+        $pencilColumns = array_column($pencilColumnsStmt->fetchAll(), 'column_name');
+        $results['pencil_space_accounts_columns'] = $pencilColumns;
+    } catch (Exception $e) {
+        $results['pencil_space_accounts'] = "❌ pencil_space_accounts: " . $e->getMessage();
     }
 
     // List all available tables for debugging
