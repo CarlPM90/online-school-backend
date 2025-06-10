@@ -18,8 +18,22 @@ class FixCorsHeaders
     {
         // Handle preflight OPTIONS requests
         if ($request->getMethod() === 'OPTIONS') {
+            $origin = $request->header('Origin');
+            $allowedOrigins = [
+                'https://tos-front-end.vercel.app',
+                'https://tos-admin-panel.vercel.app',
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://127.0.0.1:3000',
+            ];
+            
+            $allowOrigin = '*';
+            if (in_array($origin, $allowedOrigins) || preg_match('/^https:\/\/.*\.vercel\.app$/', $origin)) {
+                $allowOrigin = $origin;
+            }
+            
             return response('', 200)
-                ->header('Access-Control-Allow-Origin', 'https://tos-front-end.vercel.app')
+                ->header('Access-Control-Allow-Origin', $allowOrigin)
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
                 ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Current-Timezone')
                 ->header('Access-Control-Allow-Credentials', 'true')
@@ -57,6 +71,7 @@ class FixCorsHeaders
         $origin = $request->header('Origin');
         $allowedOrigins = [
             'https://tos-front-end.vercel.app',
+            'https://tos-admin-panel.vercel.app',
             'http://localhost:3000',
             'http://localhost:3001',
             'http://127.0.0.1:3000',
