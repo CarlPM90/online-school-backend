@@ -1,5 +1,5 @@
 <?php
-// Emergency fix for PencilSpaces configuration
+// Emergency fix for PencilSpaces configuration using direct database connection
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -7,33 +7,42 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin, Current-Timezone');
 
 try {
-    // Bootstrap Laravel
-    require_once __DIR__ . '/../bootstrap/app-fixed.php';
-    $app = require_once __DIR__ . '/../bootstrap/app-fixed.php';
-    $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
-    $app->boot();
+    // Connect directly to database using environment variables
+    $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?? 'localhost';
+    $port = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?? '5432';
+    $database = $_ENV['DB_DATABASE'] ?? getenv('DB_DATABASE') ?? 'postgres';
+    $username = $_ENV['DB_USERNAME'] ?? getenv('DB_USERNAME') ?? 'postgres';
+    $password = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?? '';
 
-    // Check if we can connect to database
-    $pdo = DB::connection()->getPdo();
+    $dsn = "pgsql:host={$host};port={$port};dbname={$database}";
+    $pdo = new PDO($dsn, $username, $password, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
     
-    $pencilSpacesUrl = env('PENCIL_SPACES_URL', 'https://pencilspaces.com');
+    $pencilSpacesUrl = $_ENV['PENCIL_SPACES_URL'] ?? getenv('PENCIL_SPACES_URL') ?? 'https://pencilspaces.com';
     $results = [];
+    $currentTime = date('Y-m-d H:i:s');
     
     // Try to add to 'settings' table
     try {
-        $existingSetting = DB::table('settings')
-            ->where('key', 'pencil_spaces_url')
-            ->first();
+        $checkStmt = $pdo->prepare("SELECT * FROM settings WHERE key = ?");
+        $checkStmt->execute(['pencil_spaces_url']);
+        $existingSetting = $checkStmt->fetch();
 
         if (!$existingSetting) {
-            DB::table('settings')->insert([
-                'key' => 'pencil_spaces_url',
-                'value' => json_encode($pencilSpacesUrl),
-                'type' => 'string',
-                'public' => true,
-                'readonly' => false,
-                'created_at' => now(),
-                'updated_at' => now(),
+            $insertStmt = $pdo->prepare("
+                INSERT INTO settings (key, value, type, public, readonly, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            $insertStmt->execute([
+                'pencil_spaces_url',
+                json_encode($pencilSpacesUrl),
+                'string',
+                true,
+                false,
+                $currentTime,
+                $currentTime
             ]);
             $results['settings_table'] = "✅ Added PencilSpaces URL to settings table";
         } else {
@@ -45,17 +54,29 @@ try {
 
     // Try to add to 'escolalms_settings' table if it exists
     try {
-        if (Schema::hasTable('escolalms_settings')) {
-            $existingEscolaSetting = DB::table('escolalms_settings')
-                ->where('key', 'pencil_spaces_url')
-                ->first();
+        $tableCheckStmt = $pdo->prepare("
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_name = 'escolalms_settings'
+        ");
+        $tableCheckStmt->execute();
+        $tableExists = $tableCheckStmt->fetch();
+
+        if ($tableExists) {
+            $checkStmt = $pdo->prepare("SELECT * FROM escolalms_settings WHERE key = ?");
+            $checkStmt->execute(['pencil_spaces_url']);
+            $existingEscolaSetting = $checkStmt->fetch();
 
             if (!$existingEscolaSetting) {
-                DB::table('escolalms_settings')->insert([
-                    'key' => 'pencil_spaces_url',
-                    'value' => $pencilSpacesUrl,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                $insertStmt = $pdo->prepare("
+                    INSERT INTO escolalms_settings (key, value, created_at, updated_at) 
+                    VALUES (?, ?, ?, ?)
+                ");
+                $insertStmt->execute([
+                    'pencil_spaces_url',
+                    $pencilSpacesUrl,
+                    $currentTime,
+                    $currentTime
                 ]);
                 $results['escolalms_settings_table'] = "✅ Added to escolalms_settings table";
             } else {
@@ -69,10 +90,14 @@ try {
     }
 
     // List all available tables for debugging
-    $tables = DB::select('SHOW TABLES');
-    $tableNames = array_map(function($table) {
-        return array_values((array)$table)[0];
-    }, $tables);
+    $tablesStmt = $pdo->prepare("
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        ORDER BY table_name
+    ");
+    $tablesStmt->execute();
+    $tableNames = array_column($tablesStmt->fetchAll(), 'table_name');
 
     echo json_encode([
         'status' => 'success',
