@@ -16,7 +16,8 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $middleware = [
-        \Fruitcake\Cors\HandleCors::class,
+        \App\Http\Middleware\FixCorsHeaders::class,
+        // \Fruitcake\Cors\HandleCors::class, // Disabled - using custom CORS
         \App\Http\Middleware\CheckForMaintenanceMode::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
