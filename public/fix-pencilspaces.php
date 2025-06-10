@@ -20,7 +20,11 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
     
-    $pencilSpacesUrl = $_ENV['PENCIL_SPACES_URL'] ?? getenv('PENCIL_SPACES_URL') ?? 'https://pencilspaces.com';
+    // Get PencilSpaces URL from environment or use default
+    $pencilSpacesUrl = $_ENV['PENCIL_SPACES_URL'] ?? getenv('PENCIL_SPACES_URL');
+    if (!$pencilSpacesUrl || $pencilSpacesUrl === false || $pencilSpacesUrl === '') {
+        $pencilSpacesUrl = 'https://pencilspaces.com';
+    }
     $results = [];
     $currentTime = date('Y-m-d H:i:s');
     
@@ -49,47 +53,26 @@ try {
             $hasPublic = in_array('public', $columns);
             $hasReadonly = in_array('readonly', $columns);
             $hasType = in_array('type', $columns);
+            $hasGroup = in_array('group', $columns);
+            $hasEnumerable = in_array('enumerable', $columns);
+            $hasSort = in_array('sort', $columns);
             
-            if ($hasPublic && $hasReadonly && $hasType) {
-                $insertStmt = $pdo->prepare("
-                    INSERT INTO settings (key, value, type, public, readonly, created_at, updated_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ");
-                $insertStmt->execute([
-                    'pencil_spaces_url',
-                    json_encode($pencilSpacesUrl),
-                    'string',
-                    true,
-                    false,
-                    $currentTime,
-                    $currentTime
-                ]);
-            } elseif ($hasPublic && $hasType) {
-                $insertStmt = $pdo->prepare("
-                    INSERT INTO settings (key, value, type, public, created_at, updated_at) 
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ");
-                $insertStmt->execute([
-                    'pencil_spaces_url',
-                    json_encode($pencilSpacesUrl),
-                    'string',
-                    true,
-                    $currentTime,
-                    $currentTime
-                ]);
-            } else {
-                // Minimal insert - just key and value
-                $insertStmt = $pdo->prepare("
-                    INSERT INTO settings (key, value, created_at, updated_at) 
-                    VALUES (?, ?, ?, ?)
-                ");
-                $insertStmt->execute([
-                    'pencil_spaces_url',
-                    json_encode($pencilSpacesUrl),
-                    $currentTime,
-                    $currentTime
-                ]);
-            }
+            // Build insert based on available columns - include all required fields
+            $insertStmt = $pdo->prepare("
+                INSERT INTO settings (key, \"group\", value, public, enumerable, sort, type, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $insertStmt->execute([
+                'pencil_spaces_url',
+                'general', // Default group
+                json_encode($pencilSpacesUrl),
+                true,  // public
+                false, // enumerable
+                0,     // sort
+                'string', // type
+                $currentTime,
+                $currentTime
+            ]);
             $results['settings_table'] = "✅ Added PencilSpaces URL to settings table";
         } else {
             $results['settings_table'] = "✅ PencilSpaces URL already exists in settings table";
