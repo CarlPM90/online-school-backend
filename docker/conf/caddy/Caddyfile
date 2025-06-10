@@ -1,5 +1,5 @@
-# Railway Caddy configuration - binds to all interfaces
-:80 {
+# Railway Caddy configuration - binds to Railway PORT or default 80
+:{$PORT:80} {
     # Resolve the root directory for the app
     root * /var/www/html/public
 

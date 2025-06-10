@@ -28,12 +28,13 @@ check_caddy() {
 # Function to check if Laravel app responds
 check_laravel() {
     local response
-    response=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:80/up 2>/dev/null)
+    local port=${PORT:-80}
+    response=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:${port}/up 2>/dev/null)
     if [ "$response" = "200" ]; then
-        echo "✅ Laravel /up endpoint responding with 200"
+        echo "✅ Laravel /up endpoint responding with 200 on port ${port}"
         return 0
     else
-        echo "❌ Laravel /up endpoint returned: $response"
+        echo "❌ Laravel /up endpoint returned: $response on port ${port}"
         return 1
     fi
 }

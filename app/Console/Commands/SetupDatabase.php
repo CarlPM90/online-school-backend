@@ -34,8 +34,10 @@ class SetupDatabase extends Command
             }
 
             if ($hasData && !$this->option('force')) {
-                $this->warn('❗ Database already contains data. Use --force to reset.');
-                return 0;
+                $this->warn('❗ Database already contains data. Skipping destructive operations.');
+                $skipDestructiveOps = true;
+            } else {
+                $skipDestructiveOps = false;
             }
 
             // Skip key generation if key already exists to avoid breaking encrypted data
@@ -124,7 +126,15 @@ class SetupDatabase extends Command
 
             // Check if this is first setup or update
             $this->info('🗃️ Setting up database migrations...');
-            if ($this->option('force') || $this->isFirstTimeSetup()) {
+            if ($skipDestructiveOps) {
+                $this->info('🔄 Data exists - running safe migrations only...');
+                try {
+                    Artisan::call('migrate', ['--force' => true]);
+                    $this->info('✅ Safe migrations completed');
+                } catch (Exception $e) {
+                    $this->warn('Migration warning: ' . $e->getMessage());
+                }
+            } else if ($this->option('force') || $this->isFirstTimeSetup()) {
                 if ($this->option('force')) {
                     $this->warn('⚠️  FORCE FLAG DETECTED - This will destroy all existing data!');
                     $this->info('📦 Running fresh migrations with seeders...');
@@ -151,9 +161,17 @@ class SetupDatabase extends Command
             }
 
             // Setup Passport
-            $this->info('🔐 Setting up Laravel Passport...');
-            Artisan::call('passport:keys', ['--force' => true]);
-            Artisan::call('passport:client', ['--personal' => true, '--no-interaction' => true]);
+            if (!$skipDestructiveOps) {
+                $this->info('🔐 Setting up Laravel Passport...');
+                try {
+                    Artisan::call('passport:keys', ['--force' => true]);
+                    Artisan::call('passport:client', ['--personal' => true, '--no-interaction' => true]);
+                } catch (Exception $e) {
+                    $this->warn('Passport setup warning: ' . $e->getMessage());
+                }
+            } else {
+                $this->info('🔐 Skipping Passport setup (data exists)...');
+            }
 
             // Fix failed_jobs table and clear encrypted job data
             $this->info('🔧 Fixing failed_jobs table and clearing problematic jobs...');
