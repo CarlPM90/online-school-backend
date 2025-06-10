@@ -96,6 +96,13 @@ Route::get('public-settings', function () {
             $settings['pencil_spaces_url'] = env('PENCIL_SPACES_URL', 'https://pencilspaces.com');
         }
         
+        // Add multiple key formats for frontend compatibility
+        if (isset($settings['pencil_spaces_url'])) {
+            $settings['pencilspaces_url'] = $settings['pencil_spaces_url']; // Alternative naming
+            $settings['pencilSpacesUrl'] = $settings['pencil_spaces_url'];  // camelCase
+            $settings['PENCIL_SPACES_URL'] = $settings['pencil_spaces_url']; // uppercase
+        }
+        
         // Add other public settings as needed
         $settings['app_name'] = config('app.name');
         $settings['app_url'] = config('app.url');
