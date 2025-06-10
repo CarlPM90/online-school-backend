@@ -15,21 +15,26 @@ echo "✅ Database connection established!"
 echo "🔑 Generating application key..."
 php artisan key:generate --force
 
-# Clear all caches first - CRITICAL for Railway deployments
-echo "⚙️ Clearing all caches..."
-php artisan config:clear
-php artisan route:clear  
-php artisan view:clear
-php artisan cache:clear
+# CRITICAL: Clear all caches and fix Laravel bootstrap issues
+echo "⚙️ Fixing Laravel configuration issues..."
 
-# Remove any cached config files manually - Railway containers need this
+# Remove ALL cached files that could cause bootstrap problems
 rm -f bootstrap/cache/config.php
 rm -f bootstrap/cache/routes.php  
 rm -f bootstrap/cache/services.php
 rm -f bootstrap/cache/packages.php
 rm -f bootstrap/cache/compiled.php
 
-# Don't cache config on Railway - causes issues with dynamic containers
+# Force clear artisan caches (may fail if Laravel is broken, that's OK)
+php artisan config:clear 2>/dev/null || echo "Config clear failed (expected if Laravel is broken)"
+php artisan route:clear 2>/dev/null || echo "Route clear failed (expected if Laravel is broken)"  
+php artisan view:clear 2>/dev/null || echo "View clear failed (expected if Laravel is broken)"
+php artisan cache:clear 2>/dev/null || echo "Cache clear failed (expected if Laravel is broken)"
+
+# Test Laravel configuration
+echo "🔍 Testing Laravel configuration..."
+php artisan --version || echo "❌ Laravel artisan is broken"
+
 echo "⚠️ Skipping config cache to prevent Railway deployment issues"
 
 # Publish all package migrations

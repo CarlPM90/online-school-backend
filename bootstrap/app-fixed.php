@@ -37,8 +37,14 @@ $app->singleton(
 |--------------------------------------------------------------------------
 */
 
+// CRITICAL: Manually bind config service before anything else
+$app->singleton('config', function ($app) {
+    return new \Illuminate\Config\Repository();
+});
+
 // Force register core Laravel service providers that may not be loading
 $criticalProviders = [
+    \Illuminate\Config\ConfigServiceProvider::class, // CRITICAL: Must be first
     \Illuminate\Foundation\Providers\FoundationServiceProvider::class,
     \Illuminate\Database\DatabaseServiceProvider::class,
     \Illuminate\Filesystem\FilesystemServiceProvider::class,
