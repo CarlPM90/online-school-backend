@@ -16,7 +16,13 @@ echo "🔑 Generating application key..."
 php artisan key:generate --force
 
 # Clear and cache configuration
-echo "⚙️ Caching configuration..."
+echo "⚙️ Clearing and caching configuration..."
+php artisan config:clear
+php artisan route:clear  
+php artisan view:clear
+php artisan cache:clear
+
+# Rebuild caches
 php artisan config:cache
 
 # Publish all package migrations
@@ -110,15 +116,8 @@ sleep 3
 echo "🔍 Testing Laravel application..."
 php artisan --version || echo "❌ Laravel artisan command failed"
 
-# Clear any problematic caches first
-echo "🧹 Clearing Laravel caches..."
-php artisan config:clear || echo "❌ Config clear failed"
-php artisan route:clear || echo "❌ Route clear failed"
-php artisan view:clear || echo "❌ View clear failed"
-php artisan cache:clear || echo "❌ Cache clear failed"
-
 # Check if Laravel can handle basic requests
-echo "🧪 Testing Laravel route cache..."
+echo "🧪 Rebuilding Laravel route cache..."
 php artisan route:cache || echo "❌ Route cache failed"
 
 # Run readiness check

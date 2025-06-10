@@ -32,13 +32,34 @@ try {
     echo "✅ Database connection successful\n";
     
     // Test Laravel DB facade
-    echo "\n4. Testing Laravel DB...\n";
-    $app->boot();
+    echo "\n4. Testing Laravel Service Providers...\n";
     
-    // Use the app container instead of facade
-    $db = $app->make('db');
-    $users = $db->table('users')->count();
-    echo "✅ Laravel DB working - Users count: $users\n";
+    // Check if services are registered
+    $services = $app->getLoadedProviders();
+    echo "Loaded providers: " . count($services) . "\n";
+    
+    // Check specific services
+    $dbService = $app->bound('db') ? 'BOUND' : 'NOT BOUND';
+    echo "DB service: $dbService\n";
+    
+    if ($app->bound('db')) {
+        $db = $app->make('db');
+        $users = $db->table('users')->count();
+        echo "✅ Laravel DB working - Users count: $users\n";
+    } else {
+        echo "❌ DB service not registered\n";
+        
+        // Try to manually register database service
+        echo "Attempting to register database provider...\n";
+        $app->register(\Illuminate\Database\DatabaseServiceProvider::class);
+        
+        if ($app->bound('db')) {
+            echo "✅ DB service registered manually\n";
+            $db = $app->make('db');
+            $users = $db->table('users')->count();
+            echo "✅ Laravel DB working - Users count: $users\n";
+        }
+    }
     
     // Test if routes are loaded
     echo "\n5. Testing Routes...\n";
