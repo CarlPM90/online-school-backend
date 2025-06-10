@@ -180,6 +180,7 @@ class SetupDatabase extends Command
             $this->info('✏️ Setting up PencilSpaces configuration...');
             try {
                 $this->setupPencilSpacesConfig();
+                $this->setupPencilSpacesApiConfig();
             } catch (Exception $e) {
                 $this->warn('PencilSpaces setup warning: ' . $e->getMessage());
             }
@@ -472,6 +473,46 @@ class SetupDatabase extends Command
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+            }
+        }
+    }
+
+    private function setupPencilSpacesApiConfig()
+    {
+        // Check if settings table exists (from escolalms/settings package)
+        if (!Schema::hasTable('settings')) {
+            $this->warn('Settings table not found - skipping PencilSpaces API configuration');
+            return;
+        }
+
+        // Set up required PencilSpaces API configuration
+        $apiSettings = [
+            'pencil_spaces_api_key' => env('PENCIL_SPACES_API_KEY', ''),
+            'pencil_spaces_api_url' => env('PENCIL_SPACES_API_URL', 'https://api.pencilspaces.com'),
+        ];
+
+        foreach ($apiSettings as $key => $defaultValue) {
+            $existingSetting = DB::table('settings')
+                ->where('key', $key)
+                ->first();
+
+            if (!$existingSetting && $defaultValue !== '') {
+                DB::table('settings')->insert([
+                    'key' => $key,
+                    'group' => 'pencil_spaces',
+                    'value' => json_encode($defaultValue),
+                    'type' => 'text',
+                    'public' => false, // API keys should not be public
+                    'enumerable' => false,
+                    'readonly' => false,
+                    'sort' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $this->info("✅ Added {$key} setting");
+            } elseif ($defaultValue === '') {
+                $this->warn("⚠️  {$key} environment variable not set - PencilSpaces API may not work");
+                $this->warn("💡 Add {$key}=your-api-key to Railway environment variables");
             }
         }
     }
