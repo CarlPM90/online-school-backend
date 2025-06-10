@@ -61,11 +61,49 @@ Route::get('test', function () {
 });
 
 Route::get('settings', function () {
-    return response()->json([
-        'app_name' => config('app.name'),
-        'app_url' => config('app.url'),
-        'api_working' => true
-    ]);
+    try {
+        // Get PencilSpaces URL from database settings
+        $pencilSpacesUrl = null;
+        try {
+            $pencilSpacesSetting = DB::table('settings')
+                ->where('key', 'pencil_spaces_url')
+                ->where('public', 't')
+                ->first();
+                
+            if ($pencilSpacesSetting) {
+                $pencilSpacesUrl = json_decode($pencilSpacesSetting->value, true);
+            }
+        } catch (Exception $e) {
+            // Fallback to environment variable
+            $pencilSpacesUrl = env('PENCIL_SPACES_URL', 'https://pencilspaces.com');
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'config' => [
+                    'pencil_spaces_link' => $pencilSpacesUrl,
+                    'app_name' => config('app.name'),
+                    'app_url' => config('app.url'),
+                ]
+            ],
+            // Legacy format for compatibility
+            'app_name' => config('app.name'),
+            'app_url' => config('app.url'),
+            'api_working' => true
+        ]);
+        
+    } catch (Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'data' => [
+                'config' => [
+                    'pencil_spaces_link' => 'https://pencilspaces.com', // fallback
+                ]
+            ]
+        ], 500);
+    }
 });
 
 Route::get('config', function () {
