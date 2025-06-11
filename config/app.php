@@ -168,23 +168,6 @@ return [
         /*
          * Package Service Providers...
          */
-        
-        // EscolaLMS Core Providers
-        EscolaLms\Core\EscolaLmsServiceProvider::class,
-        EscolaLms\Auth\EscolaLmsAuthServiceProvider::class,
-        EscolaLms\Courses\EscolaLmsCourseServiceProvider::class,
-        EscolaLms\Tracker\EscolaLmsTrackerServiceProvider::class,
-        EscolaLms\Categories\EscolaLmsCategoriesServiceProvider::class,
-        EscolaLms\Tags\EscolaLmsTagsServiceProvider::class,
-        EscolaLms\Settings\EscolaLmsSettingsServiceProvider::class,
-        EscolaLms\Permissions\EscolaLmsPermissionsServiceProvider::class,
-        
-        // Additional EscolaLMS Providers
-        EscolaLms\Cart\EscolaLmsCartServiceProvider::class,
-        EscolaLms\Payments\EscolaLmsPaymentsServiceProvider::class,
-        EscolaLms\Consultations\EscolaLmsConsultationsServiceProvider::class,
-        EscolaLms\Webinar\EscolaLmsWebinarServiceProvider::class,
-        EscolaLms\Reports\EscolaLmsReportsServiceProvider::class,
 
         /*
          * Application Service Providers...
