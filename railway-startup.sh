@@ -118,9 +118,13 @@ sleep 3
 echo "🔍 Testing Laravel application..."
 php artisan --version || echo "❌ Laravel artisan command failed"
 
-# Check if Laravel can handle basic requests
-echo "🧪 Rebuilding Laravel route cache..."
-php artisan route:cache || echo "❌ Route cache failed"
+# Force package discovery to ensure all EscolaLMS routes are registered
+echo "📦 Re-discovering packages to ensure routes are available..."
+php artisan package:discover --ansi
+
+# Now it's safe to cache routes since packages are discovered
+echo "🧪 Caching routes after package discovery..."
+php artisan route:cache || echo "❌ Route cache failed - continuing anyway"
 
 # Run readiness check
 echo "🔍 Running service readiness verification..."

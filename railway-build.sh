@@ -87,6 +87,10 @@ php artisan passport:keys --force
 echo "👤 Creating Passport client..."
 php artisan passport:client --personal --no-interaction
 
+# Ensure package discovery happens before caching
+echo "📦 Discovering packages before caching..."
+php artisan package:discover --ansi
+
 # Cache configuration for production
 echo "⚙️ Caching configuration for production..."
 php artisan config:cache
