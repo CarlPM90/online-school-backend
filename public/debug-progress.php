@@ -9,6 +9,24 @@ try {
     $app = require_once '/var/www/html/bootstrap/app.php';
     $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
     
+    // Properly bootstrap the application
+    $app->loadEnvironmentFrom('.env');
+    $app->singleton(
+        Illuminate\Contracts\Http\Kernel::class,
+        App\Http\Kernel::class
+    );
+    $app->singleton(
+        Illuminate\Contracts\Console\Kernel::class,
+        App\Console\Kernel::class
+    );
+    $app->singleton(
+        Illuminate\Contracts\Debug\ExceptionHandler::class,
+        App\Exceptions\Handler::class
+    );
+    
+    // Boot the application
+    $app->boot();
+    
     // Get user by email
     $user = \App\Models\User::where('email', 'carl.p.morris@gmail.com')->first();
     
