@@ -6,6 +6,7 @@ return [
     'allowed_methods' => ['*'],
     'allowed_origins' => [
         'https://tos-front-end.vercel.app',
+        'https://tos-admin-panel.vercel.app',
         'http://localhost:3000',
         'http://localhost:3001',
         'http://127.0.0.1:3000',
