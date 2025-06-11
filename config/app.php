@@ -168,6 +168,12 @@ return [
         /*
          * Package Service Providers...
          */
+        
+        // EscolaLMS Core - Essential for API routes
+        EscolaLms\Core\EscolaLmsServiceProvider::class,
+        EscolaLms\Auth\EscolaLmsAuthServiceProvider::class,
+        EscolaLms\Courses\EscolaLmsCourseServiceProvider::class,
+        EscolaLms\Tracker\EscolaLmsTrackerServiceProvider::class,
 
         /*
          * Application Service Providers...
